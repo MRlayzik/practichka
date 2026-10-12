@@ -1,0 +1,43 @@
+package main
+
+import (
+    "fmt"
+    "time"
+)
+
+func main() {
+    high := make(chan string, 10)
+    low := make(chan string, 10)
+    done := make(chan struct{})
+
+    go func() {
+        for {
+            select {
+            case task := <-high:
+                fmt.Println("высокий приоритет:", task)
+                continue
+            case <-done:
+                return
+            default:
+            }
+
+            select {
+            case task := <-high:
+                fmt.Println("высокий приоритет:", task)
+            case task := <-low:
+                fmt.Println("низкий приоритет:", task)
+            case <-done:
+                return
+            }
+        }
+    }()
+
+    low <- "низкая 1"
+    low <- "низкая 2"
+    high <- "высокая 1"
+    high <- "высокая 2"
+
+    time.Sleep(1 * time.Second)
+    close(done)
+    time.Sleep(1 * time.Second)
+}
